@@ -24,7 +24,7 @@ The module reads the INI file each time you run the command. If the path contain
 2. Type `/rm` in the chat and press Enter. The editor may appear briefly while the map is imported. The local chat displays the selected filename or an error.
 3. Check that the map preview changes, then use a second client to verify that it receives the map and can start the game.
 
-The random selection includes `.png`, `.bit`, `.lev`, and `.img` files directly inside the configured folder. Each selection is independent, so the same map may be selected again. The game validates the file contents during import. Only the host needs to install the module. Map transfer uses the lobby's normal logic.
+The random selection includes `.png`, `.bit`, `.lev`, and `.img` files in the configured folder and all its subfolders. Every compatible map has an equal chance of being selected. Symbolic links and junctions are skipped to avoid directory loops. If a folder cannot be read or a path is too long, selection stops with an error. Each selection is independent, so the same map may be selected again. The game validates the file contents during import. Only the host needs to install the module. Map transfer uses the lobby's normal logic.
 
 Loading a map creates a temporary copy inside `User\SavedLevels`, so the game needs write permission in that folder. To uninstall, close the game and remove the DLL and INI files.
 

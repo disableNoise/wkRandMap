@@ -63,9 +63,59 @@ static BOOL sample(DWORD count, BOOL *selected)
     return TRUE;
 }
 
+static const char *scanMaps(const WCHAR *folder, DWORD *count, WCHAR *source)
+{
+    WCHAR search[MAX_PATH];
+    if (swprintf(search, MAX_PATH, L"%ls\\*", folder) < 0)
+        return "Map folder path is too long.";
+
+    WIN32_FIND_DATAW entry;
+    HANDLE scan = FindFirstFileW(search, &entry);
+    if (scan == INVALID_HANDLE_VALUE)
+        return GetLastError() == ERROR_FILE_NOT_FOUND ? NULL :
+            "Couldn't open a map folder.";
+
+    const char *error = NULL;
+    do {
+        // Skip links and junctions to avoid cycles or leaving the map tree.
+        if ((entry.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) ||
+            !wcscmp(entry.cFileName, L".") || !wcscmp(entry.cFileName, L".."))
+            continue;
+        BOOL directory = (entry.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
+        if (!directory && ((!entry.nFileSizeHigh && !entry.nFileSizeLow) ||
+                           !extension(entry.cFileName)))
+            continue;
+
+        WCHAR path[MAX_PATH];
+        if (swprintf(path, MAX_PATH, L"%ls\\%ls", folder, entry.cFileName) < 0) {
+            error = "Map path is too long.";
+            break;
+        }
+        if (directory) {
+            error = scanMaps(path, count, source);
+        } else {
+            BOOL selected;
+            if (*count == MAXDWORD) {
+                error = "Too many maps to select from.";
+            } else if (!sample(++*count, &selected)) {
+                error = "Couldn't select a random map.";
+            } else if (selected) {
+                wcscpy(source, path);
+                wcscpy(chosenName, entry.cFileName);
+            }
+        }
+        if (error) break;
+    } while (FindNextFileW(scan, &entry));
+    DWORD scanError = GetLastError();
+    FindClose(scan);
+    if (error) return error;
+    if (scanError != ERROR_NO_MORE_FILES) return "Couldn't read an entire map folder.";
+    return NULL;
+}
+
 static const char *stageMap(void)
 {
-    WCHAR ini[MAX_PATH], setting[MAX_PATH], folder[MAX_PATH], search[MAX_PATH];
+    WCHAR ini[MAX_PATH], setting[MAX_PATH], folder[MAX_PATH];
     if (swprintf(ini, MAX_PATH, L"%lswkRandMap.ini", installDir) < 0)
         return "Route of the game is too long.";
 
@@ -81,40 +131,14 @@ static const char *stageMap(void)
         return "Use an absolute or relative route to WA.exe";
 
     if (swprintf(folder, MAX_PATH, L"%ls%ls", unc || drive ? L"" : installDir,
-                 setting) < 0 ||
-        swprintf(search, MAX_PATH, L"%ls\\*", folder) < 0)
-        return "Map's route is too long.";
-
-    WIN32_FIND_DATAW entry;
-    HANDLE scan = FindFirstFileW(search, &entry);
-    if (scan == INVALID_HANDLE_VALUE)
-        return GetLastError() == ERROR_FILE_NOT_FOUND ?
-            "The folder doesn't contain compatible maps" :
-            "Couldn't open Folder in wkRandMap.ini.";
+                 setting) < 0)
+        return "Map folder path is too long.";
 
     DWORD count = 0;
-    const char *error = NULL;
-    do {
-        if ((entry.dwFileAttributes & (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE_POINT)) ||
-            (!entry.nFileSizeHigh && !entry.nFileSizeLow) || !extension(entry.cFileName))
-            continue;
-        BOOL selected;
-        if (!sample(++count, &selected)) {
-            error = "Couldn't sort the map.";
-            break;
-        }
-        if (selected) wcscpy(chosenName, entry.cFileName);
-    } while (FindNextFileW(scan, &entry));
-    DWORD scanError = GetLastError();
-    FindClose(scan);
-
-    if (error) return error;
-    if (scanError != ERROR_NO_MORE_FILES) return "Couldn't read the entire folder.";
-    if (!count) return "The folder doesn't contain .png, .bit, .lev ni .img format.";
-
     WCHAR source[MAX_PATH];
-    if (swprintf(source, MAX_PATH, L"%ls\\%ls", folder, chosenName) < 0)
-        return "Map's route is too long";
+    const char *error = scanMaps(folder, &count, source);
+    if (error) return error;
+    if (!count) return "No .png, .bit, .lev or .img maps found in the folder or its subfolders.";
 
     // The editor imports from SavedLevels. Stage under an ASCII filename
     // because the 3.8.1 frontend passes ANSI paths to its map loader.
