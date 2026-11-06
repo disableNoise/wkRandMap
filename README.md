@@ -1,41 +1,41 @@
 # wkRandMap 0.1.0
 
-Módulo WormKit experimental para Worms Armageddon 3.8.1 de 32 bits.
+Experimental WormKit module for 32-bit Worms Armageddon 3.8.1.
 
-## Instalación
+## Installation
 
-1. Cierra Worms Armageddon.
-2. Copia `wkRandMap.dll` y `wkRandMap.ini` junto a `WA.exe`.
-3. Activa **Options → Advanced → Load WormKit modules** y reinicia el juego.
-4. Crea la carpeta `User\SavedLevels\RandMap` y agrega mapas que ya puedas abrir manualmente desde el editor del juego.
+1. Close Worms Armageddon.
+2. Copy `wkRandMap.dll` and `wkRandMap.ini` into the same folder as `WA.exe`.
+3. Enable **Options > Advanced > Load WormKit modules** and restart the game.
+4. Create the `User\SavedLevels\RandMap` folder and add maps that you can already open manually in the game's editor.
 
-Para usar otra carpeta, edita el INI. Puedes usar una ruta relativa a `WA.exe` o una ruta absoluta.
+To use a different folder, edit the INI file. You can use an absolute path or a path relative to `WA.exe`.
 
 ```ini
 [RandMap]
-Folder=D:\Worms\Mapas WXW
+Folder=User\SavedLevels\TTRR
 ```
 
-El módulo lee el INI cada vez que ejecutas el comando. Si la ruta contiene tildes u otros caracteres fuera de la página de códigos del sistema, guarda el INI como UTF-16 LE con BOM.
+The module reads the INI file each time you run the command. If the path contains accented letters or other characters outside the system code page, save the INI file as UTF-16 LE with a BOM.
 
-## Uso y prueba
+## Usage and Testing
 
-1. Crea un lobby como host, por ejemplo en LAN.
-2. Escribe `/randmap` en el chat y presiona Enter. El editor puede aparecer brevemente mientras se importa el mapa. El chat local indica el nombre elegido o un error.
-3. Comprueba que cambie la vista previa y, con un segundo cliente, verifica que reciba el mapa y pueda iniciar la partida.
+1. Host a lobby, for example on a LAN.
+2. Type `/rm` in the chat and press Enter. The editor may appear briefly while the map is imported. The local chat displays the selected filename or an error.
+3. Check that the map preview changes, then use a second client to verify that it receives the map and can start the game.
 
-El sorteo incluye archivos `.png`, `.bit`, `.lev` e `.img` directamente en la carpeta configurada. Cada sorteo es independiente y puede volver a elegir el mismo mapa. El juego valida el contenido al importarlo. Solo el host instala el módulo. El envío del mapa usa la lógica normal del lobby.
+The random selection includes `.png`, `.bit`, `.lev`, and `.img` files directly inside the configured folder. Each selection is independent, so the same map may be selected again. The game validates the file contents during import. Only the host needs to install the module. Map transfer uses the lobby's normal logic.
 
-La carga crea una copia temporal dentro de `User\SavedLevels`, por lo que el juego necesita permiso de escritura ahí. Para desinstalar, cierra el juego y retira la DLL y el INI.
+Loading a map creates a temporary copy inside `User\SavedLevels`, so the game needs write permission in that folder. To uninstall, close the game and remove the DLL and INI files.
 
-## Compatibilidad y compilación
+## Compatibility and Building
 
-DLL PE32 compilada y puntos de entrada cotejados con el ejecutable del parche oficial 3.8.1 para CD. La DLL comprueba las firmas de las rutinas y se desactiva cuando difieren. Falta probarla dentro de una partida en Windows, incluidas las ediciones Steam y GOG. La detección de versión incompatible se registra mediante `OutputDebugStringA`.
+The PE32 DLL has been compiled, and its entry points have been checked against the executable from the official 3.8.1 patch for the CD edition. The DLL checks routine signatures and disables itself if they differ. In-game testing on Windows is still pending, just tested on GOG edition. Unsupported versions are reported through `OutputDebugStringA`.
 
-Para compilar con Zig 0.15.2 desde la carpeta que contiene el código:
+To build with Zig 0.15.2, run the following command from the source folder:
 
 ```sh
 zig cc -target x86-windows-gnu -O2 -Wall -Wextra -Werror -shared -o wkRandMap.dll wkRandMap.c -lbcrypt
 ```
 
-Referencias técnicas: ejecutable del parche 3.8.1 distribuido por [Worms Knowledge Base](https://worms2d.info/Updates_(Worms_Armageddon)) y convenciones del chat documentadas en el código de [wkTerrainSync](https://github.com/rm-rf-worms/wkTerrainSync).
+Technical references: the 3.8.1 patch executable distributed by [Worms Knowledge Base](<https://worms2d.info/Updates_(Worms_Armageddon)>) and the chat conventions documented in the [wkTerrainSync](https://github.com/rm-rf-worms/wkTerrainSync) source code.
