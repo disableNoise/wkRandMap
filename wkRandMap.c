@@ -67,30 +67,30 @@ static const char *stageMap(void)
 {
     WCHAR ini[MAX_PATH], setting[MAX_PATH], folder[MAX_PATH], search[MAX_PATH];
     if (swprintf(ini, MAX_PATH, L"%lswkRandMap.ini", installDir) < 0)
-        return "Ruta del juego demasiado larga.";
+        return "Route of the game is too long.";
 
     DWORD size = GetPrivateProfileStringW(L"RandMap", L"Folder",
         L"User\\SavedLevels\\RandMap", setting, MAX_PATH, ini);
-    if (!size || size >= MAX_PATH - 1) return "Revisa Folder en wkRandMap.ini.";
+    if (!size || size >= MAX_PATH - 1) return "Check folder in wkRandMap.ini.";
 
     BOOL unc = setting[0] == L'\\' && setting[1] == L'\\';
     BOOL drive = size >= 3 && setting[1] == L':' &&
                  (setting[2] == L'\\' || setting[2] == L'/');
     if (!unc && !drive && (setting[0] == L'\\' || setting[0] == L'/' ||
                            (size > 1 && setting[1] == L':')))
-        return "Usa una ruta absoluta o relativa a WA.exe.";
+        return "Use an absolute or relative route to WA.exe";
 
     if (swprintf(folder, MAX_PATH, L"%ls%ls", unc || drive ? L"" : installDir,
                  setting) < 0 ||
         swprintf(search, MAX_PATH, L"%ls\\*", folder) < 0)
-        return "Ruta de mapas demasiado larga.";
+        return "Map's route is too long.";
 
     WIN32_FIND_DATAW entry;
     HANDLE scan = FindFirstFileW(search, &entry);
     if (scan == INVALID_HANDLE_VALUE)
         return GetLastError() == ERROR_FILE_NOT_FOUND ?
-            "La carpeta no contiene mapas compatibles." :
-            "No se pudo abrir Folder en wkRandMap.ini.";
+            "The folder doesn't contain compatible maps" :
+            "Couldn't open Folder in wkRandMap.ini.";
 
     DWORD count = 0;
     const char *error = NULL;
@@ -100,7 +100,7 @@ static const char *stageMap(void)
             continue;
         BOOL selected;
         if (!sample(++count, &selected)) {
-            error = "No se pudo sortear el mapa.";
+            error = "Couldn't sort the map.";
             break;
         }
         if (selected) wcscpy(chosenName, entry.cFileName);
@@ -109,12 +109,12 @@ static const char *stageMap(void)
     FindClose(scan);
 
     if (error) return error;
-    if (scanError != ERROR_NO_MORE_FILES) return "No se pudo leer toda la carpeta.";
-    if (!count) return "La carpeta no contiene mapas .png, .bit, .lev ni .img.";
+    if (scanError != ERROR_NO_MORE_FILES) return "Couldn't read the entire folder.";
+    if (!count) return "The folder doesn't contain .png, .bit, .lev ni .img format.";
 
     WCHAR source[MAX_PATH];
     if (swprintf(source, MAX_PATH, L"%ls\\%ls", folder, chosenName) < 0)
-        return "Ruta del mapa demasiado larga.";
+        return "Map's route is too long";
 
     // The editor imports from SavedLevels. Stage under an ASCII filename
     // because the 3.8.1 frontend passes ANSI paths to its map loader.
@@ -126,7 +126,7 @@ static const char *stageMap(void)
         if (!MultiByteToWideChar(CP_ACP, 0, stagedName, -1, wideName, 64) ||
             swprintf(stagedPath, MAX_PATH, L"%lsUser\\SavedLevels\\%ls",
                      installDir, wideName) < 0)
-            return "Ruta temporal demasiado larga.";
+            return "Temporal route is too long.";
         if (CopyFileW(source, stagedPath, TRUE)) {
             // Do not inherit read-only attributes that would prevent cleanup.
             SetFileAttributesW(stagedPath, FILE_ATTRIBUTE_NORMAL);
@@ -136,7 +136,7 @@ static const char *stageMap(void)
         if (copyError != ERROR_FILE_EXISTS && copyError != ERROR_ALREADY_EXISTS)
             break;
     }
-    return "No se pudo copiar el mapa a User\\SavedLevels.";
+    return "The map couldn't be copied to User\\SavedLevels.";
 }
 
 static void setGameString(char **field, const char *value)
@@ -195,10 +195,10 @@ static int __fastcall onEditorInit(BYTE *editor, void *edx)
 
 static int __fastcall onHostCommand(BYTE *host, void *edx, char **command, char **args)
 {
-    if (!command || !*command || _stricmp(*command, "randmap"))
+    if (!command || !*command || _stricmp(*command, "rm"))
         return originalCommand(host, edx, command, args);
     if (args && *args && (*args)[strspn(*args, " \t")]) {
-        printLine(host, "Uso: /randmap");
+        printLine(host, "Use: /rm");
         return 1;
     }
     if (busy) return 1;
@@ -224,13 +224,13 @@ static int __fastcall onHostCommand(BYTE *host, void *edx, char **command, char 
         if (WideCharToMultiByte(CP_ACP, 0, chosenName, -1, name, MAX_PATH, NULL, NULL)) {
             // Colons are chat protocol separators.
             for (char *p = name; *p; ++p) if (*p == ':') *p = '_';
-            snprintf(line, sizeof(line), "Mapa cargado: %s", name);
+            snprintf(line, sizeof(line), "Map loaded: %s", name);
             printLine(host, line);
         } else {
-            printLine(host, "Mapa cargado.");
+            printLine(host, "Map loaded.");
         }
     } else {
-        printLine(host, "No se pudo importar el mapa elegido.");
+        printLine(host, "The selected map couldn't be imported.");
     }
     return 1;
 }
